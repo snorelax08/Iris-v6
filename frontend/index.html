@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Iris — Voice Music Assistant</title>
+  <meta name="theme-color" content="#000000" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="polish.css" />
+  <link rel="stylesheet" href="stage.css" />
+</head>
+<body class="phase-off">
+  <header class="topbar">
+    <h1 class="wordmark">Iris</h1>
+    <div class="top-actions">
+      <div id="micPill" class="mic-pill" data-state="starting" role="status" aria-live="polite">
+        <span class="mic-dot" aria-hidden="true"></span>
+        <span id="micPillLabel">Starting</span>
+        <button id="micRetry" class="pill-retry hidden" type="button">Retry</button>
+      </div>
+      <button id="ambientBtn" class="icon-btn" type="button" aria-label="Ambient mode" title="Ambient mode"></button>
+      <button id="diagBtn" class="icon-btn" type="button" aria-label="Diagnostics" title="Diagnostics" aria-expanded="false" aria-controls="diag"></button>
+    </div>
+  </header>
+
+  <main class="container stage-main">
+    <section class="hero" aria-label="Iris">
+      <div class="eye" id="stage" role="button" tabindex="0" aria-label="Talk to Iris">
+        <canvas id="irisCanvas" aria-hidden="true"></canvas>
+        <svg id="arc" class="arc" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <circle class="arc-track" cx="50" cy="50" r="45.5" pathLength="1000" />
+          <circle class="arc-fill" id="arcFill" cx="50" cy="50" r="45.5" pathLength="1000" />
+        </svg>
+      </div>
+      <p id="phaseCaption" class="phase-caption" aria-live="polite">Connect Spotify to begin</p>
+      <p id="heardText" class="heard" aria-live="polite"></p>
+      <p id="stageNote" class="stage-note" aria-live="polite"></p>
+      <p id="serverNote" class="stage-note server-note hidden" aria-live="polite">Waking the server. This can take up to a minute the first time.</p>
+
+      <ol id="firstRun" class="first-run hidden" aria-label="Getting started">
+        <li data-step="connect">Connect Spotify</li>
+        <li data-step="mic">Allow the microphone</li>
+        <li data-step="wake">Say “Iris”</li>
+      </ol>
+
+      <div class="signed-out">
+        <p class="pitch">Say what you want to hear. Iris finds it on Spotify and plays it in this tab.</p>
+        <button id="loginBtn" class="btn">Connect Spotify</button>
+      </div>
+    </section>
+
+    <div id="app" class="hidden">
+      <p id="matchHint" class="match-hint hidden"></p>
+
+      <div class="controls">
+        <button id="listenBtn" class="btn secondary" aria-pressed="false">Start listening</button>
+        <button id="micBtn" class="btn secondary" aria-pressed="false">Mute microphone</button>
+      </div>
+
+      <div id="choices" class="choices hidden" role="group" aria-label="Did you mean"></div>
+
+      <ul id="history" class="history" aria-label="Recent commands"></ul>
+
+      <p class="hint">
+        Try saying <em>“Iris, play Believer”</em>, <em>“Iris, pause”</em>, <em>“Iris, next”</em>,
+        <em>“Iris, volume up”</em>, <em>“Iris, kesariya bajao”</em> or <em>“Iris, option two”</em>.
+        Or tap the eye and just say the song.
+      </p>
+
+      <section id="dock" class="dock" aria-label="Now playing">
+        <div class="dock-row">
+          <div class="art" id="artBox">
+            <img id="artImg" class="hidden" alt="Album art" />
+            <div class="art-ph" id="artPh" aria-hidden="true"></div>
+            <div class="skeleton hidden" id="skeleton" aria-hidden="true">
+              <div class="shimmer"></div>
+              <p id="skeletonText"></p>
+            </div>
+            <div class="eq" id="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <button id="dockMeta" class="dock-meta" type="button" aria-expanded="false" aria-label="Show more playback controls">
+            <span id="dockTitle" class="dock-title">Nothing playing</span>
+            <span id="dockArtist" class="dock-artist"></span>
+          </button>
+          <div class="transport">
+            <button id="dockPrev" class="t-btn t-prev" type="button" aria-label="Previous track"></button>
+            <button id="dockPlay" class="t-btn t-play" type="button" aria-label="Play"></button>
+            <button id="dockNext" class="t-btn t-next" type="button" aria-label="Next track"></button>
+          </div>
+          <label class="vol">
+            <span class="vol-ico" aria-hidden="true"></span>
+            <input id="dockVol" type="range" min="0" max="100" step="1" value="70" aria-label="Volume" />
+          </label>
+        </div>
+        <div class="dock-progress">
+          <span id="dockElapsed" class="t-time">0:00</span>
+          <div class="bar" aria-hidden="true"><i id="dockBar"></i></div>
+          <span id="dockTotal" class="t-time">0:00</span>
+        </div>
+      </section>
+
+      <aside id="diag" class="drawer" aria-label="Diagnostics">
+        <div class="drawer-head">
+          <h2>Diagnostics</h2>
+          <button id="diagClose" class="icon-btn" type="button" aria-label="Close diagnostics"></button>
+        </div>
+        <div class="status-card" aria-live="polite">
+          <div class="row">
+            <span class="label">Status</span>
+            <span id="listeningStatus" class="value">Connecting player…</span>
+          </div>
+          <div class="row">
+            <span class="label">Last command</span>
+            <span id="lastCommand" class="value">—</span>
+          </div>
+          <div class="row">
+            <span class="label">Now playing</span>
+            <span id="nowPlaying" class="value">Nothing</span>
+          </div>
+          <div class="row">
+            <span class="label">Playback</span>
+            <span id="playbackStatus" class="value">Paused</span>
+          </div>
+        </div>
+        <p class="drawer-note">Keyboard: Space plays or pauses, arrows skip, L starts listening.</p>
+        <div class="drawer-actions">
+          <button id="debugToggle" class="btn secondary">Show Debug Info</button>
+        </div>
+        <pre id="debugLog" class="debug-panel hidden"></pre>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="foot">Powered by Spotify Web Playback SDK. Playback needs Spotify Premium.</footer>
+
+  <div id="toasts" class="toasts" aria-hidden="true"></div>
+
+  <!-- Feature flags (must load first) -->
+  <script src="flags.js"></script>
+
+  <!-- Spotify Web Playback SDK -->
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+
+  <!-- App modules -->
+  <script src="/shared/intent.js"></script>
+  <script src="spotify.js"></script>
+  <script src="voice.js"></script>
+  <script src="duck.js"></script>
+  <script src="app.js"></script>
+  <script src="polish.js"></script>
+  <script src="stage.js"></script>
+  <script src="iris.js"></script>
+</body>
+</html>
